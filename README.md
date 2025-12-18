@@ -1,6 +1,8 @@
-# Qwen2.5-0.5B 对话状态分类微调项目
+# Semantic-vad-0.5B
 
-本项目使用 **LoRA 方法**或**全量微调**对 Qwen2.5-0.5B-Instruct 模型进行微调，添加四个特殊 token 用于对话状态分类，实现智能对话管理。
+本项目使用 **LoRA 方法**或**全量微调**对 Qwen2.5-0.5B-Instruct 模型进行微调，添加四个特殊 token 用于对话状态分类，实现智能对话管理。适合嵌入声学vad-asr-llm-tts的全双工语音对话架构中，修改为：
+声学vad -> asr -> semantic_vad -> llm-tts 
+相关论文：https://arxiv.org/pdf/2502.14145 也是这篇论文的非官方实现
 
 ## 📋 项目概述
 
