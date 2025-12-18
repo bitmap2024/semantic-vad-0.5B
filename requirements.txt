@@ -1,0 +1,27 @@
+# Qwen2.5 对话状态分类微调项目依赖
+
+# 核心依赖
+transformers>=4.36.0
+peft>=0.7.0
+torch>=2.0.0
+datasets>=2.14.0
+accelerate>=0.25.0
+vllm==0.10.2
+scikit-learn
+# Tokenizer 依赖
+sentencepiece>=0.1.99
+protobuf>=3.20.0
+
+# 配置文件处理
+pyyaml>=6.0
+
+# 数据处理
+scipy>=1.10.0
+numpy>=1.24.0
+
+# 训练优化
+bitsandbytes>=0.41.0  # 可选：用于 8-bit 优化
+tensorboard>=2.14.0   # 可选：用于训练可视化
+
+# 工具
+tqdm>=4.65.0
