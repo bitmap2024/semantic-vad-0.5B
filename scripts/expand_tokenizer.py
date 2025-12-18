@@ -94,7 +94,6 @@ def expand_tokenizer_and_model(
         with torch.no_grad():
             input_embed = model.get_input_embeddings().weight
             output_embed = model.lm_head.weight
-            
             # 使用已有 embedding 的标准差作为初始化范围
             input_std = input_embed[:original_vocab_size].std().item()
             output_std = output_embed[:original_vocab_size].std().item()

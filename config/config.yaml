@@ -3,13 +3,13 @@
 # 模型配置
 model:
   # 原始模型路径
-  original_model_path: "/semaintic-vad/models/Qwen2.5-0.5B-Instruct"
+  original_model_path: "/semaintic-vad/models/Qwen2.5-0.5B-Instruct" # Qwen2.5-0.5B-Instruct
   # 扩展后的模型路径（已修复 special token 权重初始化问题）
-  expanded_model_path: "/semaintic-vad/models/Qwen2.5-0.5B-Instruct-expanded-fixed"
-  # 微调后的模型路径（LoRA）- 改到数据盘避免空间不足
-  lora_model_path: "/semaintic-vad/models/semantic-vad-lora/checkpoint-2280"
-  # 全量微调后的模型路径
-  full_model_path: "/semaintic-vad/models/qwen-full-dialog"
+  expanded_model_path: "/semaintic-vad/models/Qwen2.5-0.5B-Instruct-expanded-fixed" # 添加四个词表
+  # 微调后的模型路径（LoRA）
+  lora_model_path: "/semaintic-vad/models/semantic-vad-lora"
+  # 全量微调后的合并的lora后的路径
+  full_model_path: "/semaintic-vad/models/semantic-vad-qwen-0.5B-merged"
 
 # 数据配置
 data:

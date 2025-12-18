@@ -36,43 +36,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# def log_memory_usage(tag=""):
-#     """记录内存使用情况"""
-#     try:
-#         process = psutil.Process(os.getpid())
-#         mem_info = process.memory_info()
-#         mem_gb = mem_info.rss / 1024 / 1024 / 1024
-        
-#         # 获取系统内存信息
-#         virtual_mem = psutil.virtual_memory()
-#         total_gb = virtual_mem.total / 1024 / 1024 / 1024
-#         available_gb = virtual_mem.available / 1024 / 1024 / 1024
-#         used_percent = virtual_mem.percent
-        
-#         # 内存告警
-#         if used_percent > 90:
-#             logger.warning(f"⚠️ [内存告警{tag}] 系统内存使用率过高: {used_percent:.1f}%，可用内存仅剩 {available_gb:.2f}GB")
-#         elif used_percent > 80:
-#             logger.warning(f"⚠️ [内存警告{tag}] 系统内存使用率较高: {used_percent:.1f}%")
-        
-#         logger.info(f"[内存监控{tag}] 进程内存: {mem_gb:.2f}GB | 系统: {used_percent:.1f}% ({total_gb-available_gb:.2f}/{total_gb:.2f}GB)")
-        
-#         # 如果有GPU，也记录GPU内存
-#         if torch.cuda.is_available():
-#             for i in range(torch.cuda.device_count()):
-#                 allocated = torch.cuda.memory_allocated(i) / 1024 / 1024 / 1024
-#                 reserved = torch.cuda.memory_reserved(i) / 1024 / 1024 / 1024
-#                 max_memory = torch.cuda.get_device_properties(i).total_memory / 1024 / 1024 / 1024
-#                 gpu_percent = (reserved / max_memory) * 100 if max_memory > 0 else 0
-                
-#                 # GPU内存告警
-#                 if gpu_percent > 90:
-#                     logger.warning(f"⚠️ [GPU内存告警{tag}] GPU {i} 内存使用率过高: {gpu_percent:.1f}%")
-                
-#                 logger.info(f"[内存监控{tag}] GPU {i}: 已分配={allocated:.2f}GB, 已保留={reserved:.2f}GB, 总量={max_memory:.2f}GB ({gpu_percent:.1f}%)")
-#     except Exception as e:
-#         logger.warning(f"无法获取内存信息: {e}")
-
 
 @dataclass
 class ModelArguments:
@@ -140,7 +103,6 @@ class CustomTrainer(Trainer):
             logger.info(f"[{metric_key_prefix}] 开始评估循环...")
             logger.info(f"[{metric_key_prefix}] 数据集大小: {len(dataloader.dataset) if hasattr(dataloader, 'dataset') else '未知'}")
             logger.info(f"[{metric_key_prefix}] Batch数量: {len(dataloader)}")
-            log_memory_usage(f" - {metric_key_prefix}开始")
             
             self.eval_batch_counter = 0
             result = super().evaluation_loop(
@@ -151,27 +113,12 @@ class CustomTrainer(Trainer):
                 metric_key_prefix=metric_key_prefix
             )
             
-            # log_memory_usage(f" - {metric_key_prefix}结束")
-            # logger.info(f"[{metric_key_prefix}] 评估循环完成，共处理 {self.eval_batch_counter} 个batch")
-            
-            # 清理内存
-            # gc.collect()
-            # if torch.cuda.is_available():
-            #     torch.cuda.empty_cache()
-            
             return result
             
         except Exception as e:
             logger.error(f"[{metric_key_prefix}] 评估循环中发生错误: {e}")
             logger.error(f"[{metric_key_prefix}] 错误发生在第 {self.eval_batch_counter} 个batch")
             logger.error(f"[{metric_key_prefix}] 完整错误堆栈:\n{traceback.format_exc()}")
-            log_memory_usage(f" - {metric_key_prefix}错误时")
-            
-            # 清理内存
-            # gc.collect()
-            # if torch.cuda.is_available():
-            #     torch.cuda.empty_cache()
-            
             raise
     
     def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
@@ -182,7 +129,6 @@ class CustomTrainer(Trainer):
             # 每10个batch记录一次
             if self.eval_batch_counter % 10 == 0:
                 logger.info(f"[prediction_step] 正在处理第 {self.eval_batch_counter} 个batch")
-                # log_memory_usage(f" - batch {self.eval_batch_counter}")
             
             # 调用父类方法
             with torch.no_grad():  # 确保不计算梯度
@@ -193,11 +139,7 @@ class CustomTrainer(Trainer):
                 if isinstance(logits, tuple):
                     logits = logits[0]
                 
-                if isinstance(logits, torch.Tensor) and logits.dim() == 3:
-                    # logits shape: [batch_size, seq_len, vocab_size]
-                    # labels shape: [batch_size, seq_len]
-                    # 需要根据 labels 找到每个序列的有效位置
-                    
+                if isinstance(logits, torch.Tensor) and logits.dim() == 3:                    
                     batch_size = logits.shape[0]
                     vocab_size = logits.shape[2]
                     
@@ -250,13 +192,6 @@ class CustomTrainer(Trainer):
             if labels is not None and isinstance(labels, torch.Tensor):
                 labels = labels.cpu()
             
-            # 立即清理GPU缓存
-            # if torch.cuda.is_available():
-            #     torch.cuda.empty_cache()
-            
-            # 每5个batch强制垃圾回收
-            # if self.eval_batch_counter % 5 == 0:
-            #     gc.collect()
             
             return (loss, logits, labels)
             
@@ -270,12 +205,6 @@ class CustomTrainer(Trainer):
                     if hasattr(value, 'dtype'):
                         logger.error(f"[prediction_step]   {key}.dtype: {value.dtype}")
             logger.error(f"[prediction_step] 完整错误堆栈:\n{traceback.format_exc()}")
-            # log_memory_usage(" - prediction_step错误时")
-            
-            # 清理内存
-            # gc.collect()
-            # if torch.cuda.is_available():
-            #     torch.cuda.empty_cache()
             
             raise
 
@@ -330,8 +259,6 @@ def create_compute_metrics(tokenizer, special_tokens, label_names):
         计算评估指标，包括准确率和混淆矩阵
         """
         try:
-            # log_memory_usage(" - compute_metrics开始")
-            
             logits, labels = eval_pred.predictions, eval_pred.label_ids
             
             logger.info(f"[compute_metrics] logits type: {type(logits)}, shape: {logits[0].shape if isinstance(logits, tuple) else logits.shape}")
@@ -429,9 +356,6 @@ def create_compute_metrics(tokenizer, special_tokens, label_names):
                     gc.collect()
             
             logger.info(f"[compute_metrics] 样本处理完成，有效样本数: {len(predictions)}")
-            # log_memory_usage(" - compute_metrics处理完样本")
-            
-            # 转换为numpy数组 (存储的是 token_id)
             predictions = np.array(predictions)
             true_labels = np.array(true_labels)
             
@@ -497,7 +421,6 @@ def create_compute_metrics(tokenizer, special_tokens, label_names):
                     logger.error(f"[compute_metrics] 生成混淆矩阵时出错: {e}")
                     logger.error(traceback.format_exc())
             
-            # log_memory_usage(" - compute_metrics结束")
             
             # 保存结果
             result = {
@@ -505,23 +428,11 @@ def create_compute_metrics(tokenizer, special_tokens, label_names):
                 "num_samples": len(predictions)
             }
             
-            # 清理内存
-            # del logits, labels, predictions, true_labels
-            # gc.collect()
-            # if torch.cuda.is_available():
-            #     torch.cuda.empty_cache()
-            
             return result
             
         except Exception as e:
             logger.error(f"[compute_metrics] 发生严重错误: {e}")
             logger.error(f"[compute_metrics] 完整错误堆栈:\n{traceback.format_exc()}")
-            # log_memory_usage(" - compute_metrics错误时")
-            
-            # 尝试清理内存
-            # gc.collect()
-            # if torch.cuda.is_available():
-            #     torch.cuda.empty_cache()
             
             # 返回默认值
             return {
@@ -633,7 +544,6 @@ def load_and_preprocess_data(tokenizer, data_path, max_length):
 def main():
     try:
         # 记录初始内存状态
-        log_memory_usage(" - 程序开始")
         # 解析命令行参数
         parser = HfArgumentParser((ModelArguments, DataArguments, TrainingModeArguments))
         if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
@@ -698,13 +608,11 @@ def main():
     # 1. 加载 tokenizer
     try:
         logger.info("加载 tokenizer...")
-        log_memory_usage(" - tokenizer加载前")
         tokenizer = AutoTokenizer.from_pretrained(
             model_args.model_name_or_path,
             trust_remote_code=True,
             use_fast=False
         )
-        # log_memory_usage(" - tokenizer加载后")
     except Exception as e:
         logger.error(f"加载tokenizer失败: {e}")
         logger.error(traceback.format_exc())
@@ -727,8 +635,6 @@ def main():
     # 2. 加载模型
     try:
         logger.info("加载模型...")
-        # log_memory_usage(" - 模型加载前")
-        
         # 根据训练模式选择不同的加载策略
         if training_mode == "lora":
             # LoRA 模式可以使用 device_map
@@ -746,7 +652,6 @@ def main():
                 dtype=torch.bfloat16,
             )
         
-        # log_memory_usage(" - 模型加载后")
         total_params = sum(p.numel() for p in model.parameters())
         logger.info(f"模型参数量: {total_params / 1e6:.2f}M")
     except Exception as e:
@@ -804,25 +709,20 @@ def main():
     # 4. 加载和预处理数据
     try:
         logger.info("\n加载训练数据集...")
-        log_memory_usage(" - 训练数据加载前")
         train_dataset = load_and_preprocess_data(
             tokenizer,
             data_args.train_data_path,
             data_args.max_length
         )
-        log_memory_usage(" - 训练数据加载后")
-        
         # 加载评估数据集
         eval_dataset = None
         if data_args.eval_data_path and os.path.exists(data_args.eval_data_path):
             logger.info("\n加载评估数据集...")
-            log_memory_usage(" - 评估数据加载前")
             eval_dataset = load_and_preprocess_data(
                 tokenizer,
                 data_args.eval_data_path,
                 data_args.max_length
             )
-            log_memory_usage(" - 评估数据加载后")
             logger.info(f"评估数据集大小: {len(eval_dataset)}")
         else:
             logger.warning("未找到评估数据集，跳过评估")
@@ -912,16 +812,13 @@ def main():
     # 9. 开始训练
     try:
         logger.info("开始训练...")
-        log_memory_usage(" - 训练开始前")
         trainer.train()
-        log_memory_usage(" - 训练结束后")
     except KeyboardInterrupt:
         logger.warning("训练被用户中断")
         raise
     except Exception as e:
         logger.error(f"训练过程中发生错误: {e}")
         logger.error(f"完整错误堆栈:\n{traceback.format_exc()}")
-        log_memory_usage(" - 训练错误时")
         raise
     
     # 10. 最终评估
@@ -930,19 +827,14 @@ def main():
             logger.info("\n" + "=" * 80)
             logger.info("开始最终评估...")
             logger.info("=" * 80)
-            log_memory_usage(" - 最终评估开始前")
-            
             final_metrics = trainer.evaluate()
-            
-            log_memory_usage(" - 最终评估结束后")
             logger.info("\n最终评估指标:")
             for key, value in final_metrics.items():
                 logger.info(f"  {key}: {value}")
         except Exception as e:
             logger.error(f"最终评估过程中发生错误: {e}")
             logger.error(f"完整错误堆栈:\n{traceback.format_exc()}")
-            log_memory_usage(" - 最终评估错误时")
-            # 不抛出异常，继续保存模型
+
     
     # 11. 保存最终模型
     logger.info(f"\n保存模型到: {output_dir}")
@@ -964,5 +856,4 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"\n程序发生严重错误: {e}")
         logger.error(f"完整错误堆栈:\n{traceback.format_exc()}")
-        log_memory_usage(" - 程序崩溃时")
         sys.exit(1)
