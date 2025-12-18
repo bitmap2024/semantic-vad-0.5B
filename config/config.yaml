@@ -1,0 +1,88 @@
+# Qwen2.5 对话状态分类微调配置文件
+
+# 模型配置
+model:
+  # 原始模型路径
+  original_model_path: "/semaintic-vad/models/Qwen2.5-0.5B-Instruct"
+  # 扩展后的模型路径（已修复 special token 权重初始化问题）
+  expanded_model_path: "/semaintic-vad/models/Qwen2.5-0.5B-Instruct-expanded-fixed"
+  # 微调后的模型路径（LoRA）- 改到数据盘避免空间不足
+  lora_model_path: "/semaintic-vad/models/semantic-vad-lora/checkpoint-2280"
+  # 全量微调后的模型路径
+  full_model_path: "/semaintic-vad/models/qwen-full-dialog"
+
+# 数据配置
+data:
+  # 训练数据路径
+  train_data_path: "/root/code/semaintic-vad/data/sft_all_train.json"
+  # 验证数据路径
+  eval_data_path: "/root/code/semaintic-vad/data/sft_all_eval.json"
+  # 最大序列长度
+  max_length: 512
+
+# LoRA 配置
+lora:
+  # LoRA rank
+  r: 8
+  # LoRA alpha
+  alpha: 32
+  # LoRA dropout
+  dropout: 0.1
+  # 目标模块（逗号分隔）
+  target_modules: "q_proj,k_proj"
+
+# 训练配置
+training:
+  # 训练模式：lora 或 full
+  mode: "lora"  # lora: LoRA微调, full: 全量微调
+  # 训练轮数
+  num_epochs: 5
+  # 每个设备的训练批次大小
+  per_device_batch_size: 32
+  # 每个设备的评估批次大小（设置为1避免OOM）
+  per_device_eval_batch_size: 32
+  # 梯度累积步数
+  gradient_accumulation_steps: 2
+  # 评估累积步数（避免评估时OOM）
+  eval_accumulation_steps: 2
+  # 学习率 (LoRA: 5e-4, 全量: 1e-5)
+  learning_rate: 5e-4
+  # 权重衰减
+  weight_decay: 0.01
+  # 预热比例
+  warmup_ratio: 0.3
+  # 日志步数
+  logging_steps: 10
+  # 保存步数
+  save_steps: 200
+  # 评估步数（每隔多少步在测试集上评估）
+  eval_steps: 200
+  # 最多保存的检查点数
+  save_total_limit: 3
+  # 使用 bf16 精度
+  bf16: true
+  # 使用梯度检查点
+  gradient_checkpointing: true
+
+# 特殊 token 配置
+special_tokens:
+  - token: "<|s_s|>"
+    description: "开始说话（TTS未播放，query语义完整）"
+  - token: "<|s_l|>"
+    description: "开始倾听（TTS播放中，用户打断）"
+  - token: "<|c_s|>"
+    description: "继续说话（TTS播放中，无意义打断/背景噪音）"
+  - token: "<|c_l|>"
+    description: "继续倾听（TTS未播放，语义不完整）"
+
+# 推理配置
+inference:
+  # 最大生成 token 数
+  max_new_tokens: 10
+  # 温度
+  temperature: 0.1
+  # top_p 采样
+  top_p: 0.7
+  # 是否采样
+  do_sample: false
+
