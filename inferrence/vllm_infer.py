@@ -346,13 +346,13 @@ def main():
     parser.add_argument(
         "--config",
         type=str,
-        default="/root/chendong/code/semaintic-vad/config/config.yaml",
+        default="/semaintic-vad/config/config.yaml",
         help="配置文件路径"
     )
     parser.add_argument(
         "--model",
         type=str,
-        default="/root/chendong/code/semaintic-vad/models/semantic-vad-qwen-0.5B-merged-1217",
+        default="/semaintic-vad/models/semantic-vad-qwen-0.5B-merged-1217",
         help="模型路径（覆盖配置文件）"
     )
     parser.add_argument(

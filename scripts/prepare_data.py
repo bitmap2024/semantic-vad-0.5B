@@ -138,7 +138,7 @@ def main():
     parser.add_argument(
         "--output",
         type=str,
-        default="/root/chendong/code/semaintic-vad/data/bsiness_v1/train_all.json",
+        default="/code/semaintic-vad/data/bsiness_v1/train_all.json",
         help="输出文件路径"
     )
     parser.add_argument(
@@ -157,7 +157,7 @@ def main():
     args = parser.parse_args()
     
     # 预设配置
-    base_dir = "/root/chendong/code/semaintic-vad/data/bsiness_v1"
+    base_dir = "/code/semaintic-vad/data/bsiness_v1"
     
     if args.preset == "single":
         # 单轮对话数据
